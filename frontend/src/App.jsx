@@ -17,7 +17,7 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://panahon-ai-production.up.railway.app'
-const OWM_KEY = '1ef9f1f0fe4e2692a69ad484915371cd'
+
 
 const PH_CENTER = [12.8797, 121.7740]
 const DEFAULT_ZOOM = 6
@@ -93,7 +93,7 @@ function WelcomeModal({ onClose }) {
         
         <div className="modal-section">
           <h3>🗺️ On-Demand Monitoring</h3>
-          <p>Panahon AI fetches real-time weather data for any municipality you search, using the OpenWeatherMap and Open-Meteo APIs.</p>
+          <p>Panahon AI fetches real-time weather data for any municipality you search, using the Open-Meteo API.</p>
         </div>
         
         <div className="modal-section">
@@ -150,8 +150,8 @@ function Sidebar({ isOpen, onClose }) {
         </div>
 
         <div className="sidebar-section">
-          <h3>📡 OpenWeatherMap + Open-Meteo</h3>
-          <p>Free and open weather data APIs for reliable forecasts.</p>
+          <h3>📡 Open-Meteo API</h3>
+          <p>Free and open weather data with no API keys required.</p>
         </div>
 
         <div className="sidebar-section">
@@ -217,7 +217,7 @@ function App() {
       const lonNum = parseFloat(lon)
 
       const weatherRes = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OWM_KEY}&units=metric`
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,cloud_cover,precipitation,weather_code`
       )
 
       if (!weatherRes.ok) {
@@ -227,16 +227,17 @@ function App() {
       }
 
       const weatherJson = await weatherRes.json()
+      const current = weatherJson.current
 
       setWeatherData({
         name: placeName,
         lat: latNum,
         lon: lonNum,
-        temp: Math.round(weatherJson.main.temp),
-        humidity: weatherJson.main.humidity,
-        clouds: weatherJson.clouds.all,
-        rain: weatherJson.rain ? Math.round(weatherJson.rain['1h'] * 100 / 10) || 0 : 0,
-        condition: weatherJson.weather[0].id,
+        temp: Math.round(current.temperature_2m),
+        humidity: current.relative_humidity_2m,
+        clouds: current.cloud_cover,
+        rain: current.precipitation || 0,
+        condition: current.weather_code,
       })
 
       try {
@@ -245,9 +246,9 @@ function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             current: {
-              temperature: weatherJson.main.temp,
-              humidity: weatherJson.main.humidity,
-              cloud_cover: weatherJson.clouds.all,
+              temperature: current.temperature_2m,
+              humidity: current.relative_humidity_2m,
+              cloud_cover: current.cloud_cover,
             },
             lat: latNum,
             lon: lonNum,
