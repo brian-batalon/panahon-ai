@@ -8,6 +8,7 @@ if os.getenv("RAILWAY_ENVIRONMENT") is None:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.utils.supabase import supabase
+from app.api.predict import router as predict_router
 
 app = FastAPI(title="Panahon AI", version="1.0.0")
 
@@ -34,3 +35,5 @@ def db_test():
         return {"status": "connected", "count": result.count}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+app.include_router(predict_router, prefix="/api")
