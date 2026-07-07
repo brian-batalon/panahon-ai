@@ -31,15 +31,18 @@ function tempColor(temp) {
 }
 
 function conditionEmoji(code) {
-  if (code >= 200 && code < 300) return '⛈️'
-  if (code >= 300 && code < 600) return '🌧️'
-  if (code >= 600 && code < 700) return '🌨️'
-  if (code >= 700 && code < 800) return '🌫️'
-  if (code === 800) return '☀️'
-  if (code === 801) return '🌤️'
-  if (code === 802) return '⛅'
-  if (code >= 803) return '☁️'
-  return '🌡️'
+  if (code === 0) return '☀️'
+  if (code === 1) return '🌤️'
+  if (code === 2) return '⛅'
+  if (code === 3) return '☁️'
+  if (code >= 45 && code <= 48) return '🌫️'
+  if (code >= 51 && code <= 55) return '🌧️'
+  if (code >= 61 && code <= 65) return '🌧️'
+  if (code >= 71 && code <= 77) return '🌨️'
+  if (code >= 80 && code <= 82) return '🌧️'
+  if (code >= 85 && code <= 86) return '🌨️'
+  if (code >= 95) return '⛈️'
+  return '☁️'
 }
 
 function createPinIcon(temp, emoji) {
