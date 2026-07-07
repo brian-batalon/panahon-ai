@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { useState, useEffect } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMap, LayersControl } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
@@ -18,6 +18,7 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://panahon-ai-production.up.railway.app'
+const OWM_API_KEY = '1ef9f1f0fe4e2692a69ad484915371cd'
 
 // Philippines center
 const PH_CENTER = [12.8797, 121.7740]
@@ -29,6 +30,25 @@ function FlyToLocation({ position }) {
     map.flyTo(position, 10, { duration: 1.5 })
   }
   return null
+}
+
+// RainViewer animation layer
+function RainViewerLayer() {
+  const [tiles, setTiles] = useState(null)
+
+  useEffect(() => {
+    fetch('https://api.rainviewer.com/public/weather-maps.json')
+      .then(res => res.json())
+      .then(data => {
+        if (data.radar && data.radar.past) {
+          const latest = data.radar.past[data.radar.past.length - 1]
+          setTiles(`${data.host}${latest.path}/256/{z}/{x}/{y}/2/1_1.png`)
+        }
+      })
+  }, [])
+
+  if (!tiles) return null
+  return <TileLayer url={tiles} opacity={0.4} />
 }
 
 function App() {
@@ -44,8 +64,7 @@ function App() {
       const res = await fetch(`${API_URL}/health`)
       const data = await res.json()
       setResult(data)
-      // Placeholder: fly to sample coordinates for now
-      setMapPosition([14.5265, 121.1536]) // Angono, Rizal
+      setMapPosition([14.5265, 121.1536])
     } catch (err) {
       setResult({ error: err.message })
     }
@@ -107,10 +126,56 @@ function App() {
           className="map-container"
           scrollWheelZoom={true}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          <LayersControl position="topright">
+            {/* Base: Standard */}
+            <LayersControl.BaseLayer checked name="Standard">
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+            </LayersControl.BaseLayer>
+
+            {/* Base: Dark */}
+            <LayersControl.BaseLayer name="Dark">
+              <TileLayer
+                attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              />
+            </LayersControl.BaseLayer>
+
+            {/* Overlay: Temperature */}
+            <LayersControl.Overlay name="Temperature">
+              <TileLayer
+                attribution='&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>'
+                url={`https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${OWM_API_KEY}`}
+                opacity={0.6}
+              />
+            </LayersControl.Overlay>
+
+            {/* Overlay: Clouds */}
+            <LayersControl.Overlay name="Clouds">
+              <TileLayer
+                attribution='&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>'
+                url={`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${OWM_API_KEY}`}
+                opacity={0.6}
+              />
+            </LayersControl.Overlay>
+
+            {/* Overlay: Precipitation */}
+            <LayersControl.Overlay name="Precipitation">
+              <TileLayer
+                attribution='&copy; <a href="https://openweathermap.org/">OpenWeatherMap</a>'
+                url={`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${OWM_API_KEY}`}
+                opacity={0.6}
+              />
+            </LayersControl.Overlay>
+
+            {/* Overlay: RainViewer Radar */}
+            <LayersControl.Overlay name="Rain Radar">
+              <RainViewerLayer />
+            </LayersControl.Overlay>
+          </LayersControl>
+
           {mapPosition && (
             <Marker position={mapPosition}>
               <Popup>{municipality}</Popup>
