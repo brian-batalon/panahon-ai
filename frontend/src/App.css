@@ -27,7 +27,7 @@ body {
 
 /* ========== SIDEBAR ========== */
 .sidebar {
-  width: 280px;
+  width: 30%;
   flex-shrink: 0;
   background: #1a1a1a;
   border-right: 1px solid #2a2a2a;
@@ -361,5 +361,9 @@ body {
   .modal-content {
     padding: 20px;
     margin: 8px;
+  }
+
+  .leaflet-control-attribution {
+    display: none !important;
   }
 }
