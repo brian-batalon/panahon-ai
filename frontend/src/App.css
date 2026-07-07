@@ -27,7 +27,7 @@ body {
 
 /* ========== SIDEBAR ========== */
 .sidebar {
-  width: 30%;
+  width: 20%;
   flex-shrink: 0;
   background: #1a1a1a;
   border-right: 1px solid #2a2a2a;
