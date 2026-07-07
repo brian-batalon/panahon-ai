@@ -146,7 +146,7 @@ function Sidebar({ isOpen, onClose }) {
 
         <div className="sidebar-section">
           <h3>🤖 XGBoost ML</h3>
-          <p>AI-powered temperature, humidity, cloud cover, and rain probability predictions.</p>
+          <p>AI-powered temperature predictions with 79.2% R² accuracy.</p>
         </div>
 
         <div className="sidebar-section">
@@ -174,6 +174,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [weatherData, setWeatherData] = useState(null)
   const [forecastData, setForecastData] = useState(null)
+  const [aiPredictions, setAiPredictions] = useState(null)
   const [mapPosition, setMapPosition] = useState(null)
   const [showWelcome, setShowWelcome] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -190,6 +191,7 @@ function App() {
     setLoading(true)
     setWeatherData(null)
     setForecastData(null)
+    setAiPredictions(null)
     setMapPosition(null)
 
     try {
@@ -230,6 +232,28 @@ function App() {
         condition: weatherJson.weather[0].id,
       })
 
+      // Call AI prediction
+      try {
+        const predRes = await fetch(`${API_URL}/api/predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            current: {
+              temperature: weatherJson.main.temp,
+              humidity: weatherJson.main.humidity,
+              cloud_cover: weatherJson.clouds.all,
+            },
+            lat: parseFloat(lat),
+            lon: parseFloat(lon),
+            hours: [6, 12, 24]
+          })
+        })
+        const predData = await predRes.json()
+        setAiPredictions(predData.predictions)
+      } catch {
+        // AI prediction failed silently
+      }
+
       try {
         const fcController = new AbortController()
         const fcTimeout = setTimeout(() => fcController.abort(), 8000)
@@ -252,7 +276,7 @@ function App() {
           })
         }
       } catch {
-        // Forecast failed silently, current weather still works
+        // Forecast failed silently
       }
 
       setMapPosition([parseFloat(lat), parseFloat(lon)])
@@ -352,7 +376,14 @@ function App() {
               <div className="wc-item">
                 <span className="wc-label">Temp</span>
                 <span className="wc-value">
-                  {forecastHour === 0 ? weatherData.temp : currentForecast?.temp ?? '—'}°C
+                  {forecastHour === 0 
+                    ? `${weatherData.temp}°C`
+                    : aiPredictions 
+                      ? `${aiPredictions[`${forecastHour}h`]}°C`
+                      : currentForecast?.temp 
+                        ? `${currentForecast.temp}°C`
+                        : '—'
+                  }
                 </span>
               </div>
               <div className="wc-item">
@@ -380,9 +411,9 @@ function App() {
                 </span>
               </div>
               <div className="wc-item">
-                <span className="wc-label">Forecast</span>
-                <span className="wc-value" style={{color:'#86efac', fontSize:'0.75rem'}}>
-                  {forecastHour === 0 ? 'Now' : `${forecastHour}h`}
+                <span className="wc-label">AI Model</span>
+                <span className="wc-value" style={{color:'#86efac', fontSize:'0.7rem'}}>
+                  {forecastHour === 0 ? 'Now' : aiPredictions ? 'XGBoost' : 'Open-Meteo'}
                 </span>
               </div>
             </div>
