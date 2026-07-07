@@ -19,166 +19,16 @@ body {
 .app {
   height: 100vh;
   width: 100%;
-  display: flex;
   overflow: hidden;
   position: fixed;
   inset: 0;
 }
 
-/* ========== SIDEBAR ========== */
-.sidebar {
-  width: 20%;
-  flex-shrink: 0;
-  background: #1a1a1a;
-  border-right: 1px solid #2a2a2a;
-  display: flex;
-  flex-direction: column;
-  padding: 14px;
-  gap: 10px;
-  z-index: 10;
-  overflow-y: auto;
-}
-
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #2a2a2a;
-}
-
-.sidebar-logo-icon {
-  font-size: 1.4rem;
-}
-
-.sidebar-logo h2 {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.sidebar-logo p {
-  font-size: 0.62rem;
-  color: #6b7280;
-  margin-top: 2px;
-}
-
-.sidebar-search {
-  display: flex;
-  gap: 6px;
-}
-
-.sidebar-search input {
-  flex: 1;
-  padding: 8px 12px;
-  font-size: 0.8rem;
-  font-family: 'Inter', sans-serif;
-  background: #262626;
-  border: 1px solid #333;
-  border-radius: 8px;
-  color: #ffffff;
-  outline: none;
-  min-width: 0;
-}
-
-.sidebar-search input:focus {
-  border-color: #4a6741;
-}
-
-.sidebar-search input::placeholder {
-  color: #525252;
-}
-
-.sidebar-search button {
-  padding: 8px 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  font-family: 'Inter', sans-serif;
-  background: #4a6741;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-  white-space: nowrap;
-}
-
-.sidebar-search button:hover {
-  background: #5a7d4e;
-}
-
-.sidebar-search button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.sidebar-weather {
-  background: #262626;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.sidebar-weather h3 {
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-}
-
-.sidebar-item {
-  background: #1a1a1a;
-  border-radius: 8px;
-  padding: 10px 8px;
-  text-align: center;
-}
-
-.s-label {
-  display: block;
-  font-size: 0.55rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6b7280;
-  margin-bottom: 3px;
-}
-
-.s-value {
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.sidebar-footer {
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid #2a2a2a;
-  text-align: center;
-  font-size: 0.65rem;
-  color: #6b7280;
-}
-
-.sidebar-footer strong {
-  color: #9ca3af;
-}
-
-.credentials {
-  font-size: 0.55rem;
-  color: #525252;
-  margin-top: 2px;
-}
-
 /* ========== MAP ========== */
 .map-area {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   position: relative;
-  min-width: 0;
 }
 
 .map-container {
@@ -186,10 +36,257 @@ body {
   height: 100%;
 }
 
-/* Legend */
+/* ========== SIDEBAR ========== */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -340px;
+  width: 340px;
+  height: 100%;
+  background: #1a1a1a;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  gap: 14px;
+  z-index: 3000;
+  transition: left 0.3s ease;
+  overflow-y: auto;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar-close {
+  align-self: flex-end;
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.sidebar-close:hover {
+  color: #ffffff;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.sidebar-logo-icon {
+  font-size: 1.5rem;
+}
+
+.sidebar-logo h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.sidebar-logo p {
+  font-size: 0.65rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.sidebar-info {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  line-height: 1.5;
+}
+
+.sidebar-section {
+  background: #262626;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.sidebar-section h3 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #4a6741;
+  margin-bottom: 4px;
+}
+
+.sidebar-section p {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid #2a2a2a;
+  text-align: center;
+}
+
+.sidebar-footer p {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+.sidebar-name {
+  font-size: 0.8rem !important;
+  font-weight: 600;
+  color: #d1d5db !important;
+  margin: 4px 0;
+}
+
+.sidebar-credentials {
+  font-size: 0.6rem !important;
+  color: #525252 !important;
+}
+
+/* ========== SIDEBAR TOGGLE ========== */
+.sidebar-toggle {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1000;
+  background: rgba(26, 26, 26, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 1.2rem;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(38, 38, 38, 0.9);
+}
+
+/* ========== FLOATING SEARCH ========== */
+.search-float {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  gap: 6px;
+  background: rgba(26, 26, 26, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 6px;
+  width: 360px;
+  max-width: 60vw;
+}
+
+.search-float input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-family: 'Inter', sans-serif;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  outline: none;
+  min-width: 0;
+}
+
+.search-float input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.search-float button {
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  background: #4a6741;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.search-float button:hover {
+  background: #5a7d4e;
+}
+
+.search-float button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ========== WEATHER CARD ========== */
+.weather-card {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: 400px;
+  max-width: 90vw;
+  background: rgba(26, 26, 26, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.weather-card-header {
+  margin-bottom: 12px;
+}
+
+.weather-location {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.weather-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.wc-item {
+  text-align: center;
+  padding: 10px 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.wc-label {
+  display: block;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 4px;
+}
+
+.wc-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* ========== LEGEND ========== */
 .map-legend {
   position: absolute;
-  bottom: 16px;
+  bottom: 20px;
   right: 12px;
   z-index: 1000;
   background: rgba(26, 26, 26, 0.85);
@@ -328,34 +425,35 @@ body {
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
   .sidebar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
     width: 100%;
-    flex-shrink: 1;
-    max-height: 45vh;
-    border-right: none;
-    border-top: 1px solid #2a2a2a;
-    border-radius: 20px 20px 0 0;
-    padding: 14px;
-    gap: 8px;
-    z-index: 1000;
+    left: -100%;
   }
 
-  .sidebar-logo,
-  .sidebar-footer {
-    display: none;
+  .sidebar.open {
+    left: 0;
   }
 
-  .sidebar-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+  .search-float {
+    top: auto;
+    bottom: 16px;
+    width: 92%;
+    max-width: 92vw;
+  }
+
+  .weather-card {
+    bottom: 90px;
+    width: 92%;
+    max-width: 92vw;
   }
 
   .map-legend {
-    bottom: 48vh;
+    bottom: 100px;
     right: 8px;
+  }
+
+  .sidebar-toggle {
+    top: 8px;
+    left: 8px;
   }
 
   .modal-content {
