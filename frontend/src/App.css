@@ -25,7 +25,7 @@ body {
   justify-content: space-between;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 1000;
 }
 
 .logo {
@@ -167,6 +167,21 @@ body {
   transform: none;
 }
 
+/* Map Card */
+.map-card {
+  max-width: 560px;
+  margin: 24px auto 0;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid #e8eddf;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.map-container {
+  height: 350px;
+  width: 100%;
+}
+
 /* Result Card */
 .result-card {
   max-width: 560px;
@@ -244,6 +259,10 @@ body {
 
   .search-row button {
     width: 100%;
+  }
+
+  .map-container {
+    height: 280px;
   }
 
   .features {
