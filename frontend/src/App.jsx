@@ -220,7 +220,7 @@ function App() {
       const lonNum = parseFloat(lon)
 
       const weatherRes = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,cloud_cover,precipitation,weather_code`
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code`
       )
 
       if (!weatherRes.ok) {
@@ -239,7 +239,7 @@ function App() {
         temp: Math.round(current.temperature_2m),
         humidity: current.relative_humidity_2m,
         clouds: current.cloud_cover,
-        rain: current.precipitation || 0,
+        rain: current.precipitation_probability || 0,
         condition: current.weather_code,
       })
 
