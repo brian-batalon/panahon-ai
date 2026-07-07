@@ -159,6 +159,15 @@ function Sidebar({ isOpen, onClose }) {
           <p>All data stored for future model retraining and climate research.</p>
         </div>
 
+        <div className="sidebar-section">
+          <h3>📊 Model Analysis</h3>
+          <p style={{marginBottom:'8px'}}>Download XGBoost performance reports:</p>
+          <div style={{display:'flex', gap:'6px', flexWrap:'wrap'}}>
+            <a href="/panahon_ai_analysis.png" download className="dl-btn">Analysis</a>
+            <a href="/panahon_ai_summary.png" download className="dl-btn">Summary</a>
+          </div>
+        </div>
+
         <div className="sidebar-footer">
           <p>Built by</p>
           <p className="sidebar-name">Engr. Brian Ezekiel D. Batalon</p>
@@ -230,7 +239,6 @@ function App() {
         condition: weatherJson.weather[0].id,
       })
 
-      // Call AI prediction
       try {
         const predRes = await fetch(`${API_URL}/api/predict`, {
           method: 'POST',
@@ -374,13 +382,20 @@ function App() {
               <div className="wc-item">
                 <span className="wc-label">Condition</span>
                 <span className="wc-value" style={{fontSize:'1.4rem'}}>
-                  {forecastHour === 0 ? conditionEmoji(weatherData.condition) : '🤖'}
+                  {forecastHour === 0 
+                    ? conditionEmoji(weatherData.condition)
+                    : aiPredictions?.[`${forecastHour}h`]?.clouds > 50 
+                      ? '☁️' 
+                      : aiPredictions?.[`${forecastHour}h`]?.rain > 0.1 
+                        ? '🌧️' 
+                        : '☀️'
+                  }
                 </span>
               </div>
               <div className="wc-item">
-                <span className="wc-label">AI Model</span>
+                <span className="wc-label">Source</span>
                 <span className="wc-value" style={{color:'#86efac', fontSize:'0.7rem'}}>
-                  {forecastHour === 0 ? 'Now' : aiPredictions ? 'XGBoost AI' : '...'}
+                  {forecastHour === 0 ? 'Live Data' : aiPredictions ? 'XGBoost AI' : '...'}
                 </span>
               </div>
             </div>
