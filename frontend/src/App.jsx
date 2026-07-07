@@ -177,7 +177,7 @@ function App() {
   const [mapPosition, setMapPosition] = useState(null)
   const [showWelcome, setShowWelcome] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [forecastHour, setForecastHour] = useState(6)
+  const [forecastHour, setForecastHour] = useState(0)
 
   const mapRef = useRef(null)
 
@@ -207,7 +207,6 @@ function App() {
       const { lat, lon, display_name } = geoData[0]
       const placeName = display_name.split(',')[0]
 
-      // Fetch current weather from OpenWeatherMap
       const weatherRes = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OWM_KEY}&units=metric`
       )
@@ -231,7 +230,6 @@ function App() {
         condition: weatherJson.weather[0].id,
       })
 
-      // Try Open-Meteo for hourly forecast
       try {
         const fcController = new AbortController()
         const fcTimeout = setTimeout(() => fcController.abort(), 8000)
@@ -339,13 +337,13 @@ function App() {
             </div>
 
             <div className="forecast-tabs">
-              {[6, 12, 24].map(h => (
+              {[0, 6, 12, 24].map(h => (
                 <button
                   key={h}
                   className={`forecast-tab ${forecastHour === h ? 'active' : ''}`}
                   onClick={() => setForecastHour(h)}
                 >
-                  {h}h
+                  {h === 0 ? 'Now' : `${h}h`}
                 </button>
               ))}
             </div>
@@ -354,37 +352,37 @@ function App() {
               <div className="wc-item">
                 <span className="wc-label">Temp</span>
                 <span className="wc-value">
-                  {forecastHour === 6 ? weatherData.temp : currentForecast?.temp ?? '—'}°C
+                  {forecastHour === 0 ? weatherData.temp : currentForecast?.temp ?? '—'}°C
                 </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Humidity</span>
                 <span className="wc-value">
-                  {forecastHour === 6 ? weatherData.humidity : currentForecast?.humidity ?? '—'}%
+                  {forecastHour === 0 ? weatherData.humidity : currentForecast?.humidity ?? '—'}%
                 </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Clouds</span>
                 <span className="wc-value">
-                  {forecastHour === 6 ? weatherData.clouds : currentForecast?.clouds ?? '—'}%
+                  {forecastHour === 0 ? weatherData.clouds : currentForecast?.clouds ?? '—'}%
                 </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Rain</span>
                 <span className="wc-value">
-                  {forecastHour === 6 ? weatherData.rain : currentForecast?.rain ?? '—'}%
+                  {forecastHour === 0 ? weatherData.rain : currentForecast?.rain ?? '—'}%
                 </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Condition</span>
                 <span className="wc-value" style={{fontSize:'1.4rem'}}>
-                  {conditionEmoji(forecastHour === 6 ? weatherData.condition : currentForecast?.condition ?? 800)}
+                  {conditionEmoji(forecastHour === 0 ? weatherData.condition : currentForecast?.condition ?? 800)}
                 </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Forecast</span>
                 <span className="wc-value" style={{color:'#86efac', fontSize:'0.75rem'}}>
-                  {forecastHour === 6 ? 'Now' : `${forecastHour}h`}
+                  {forecastHour === 0 ? 'Now' : `${forecastHour}h`}
                 </span>
               </div>
             </div>
