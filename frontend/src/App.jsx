@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -36,13 +36,65 @@ function FlyToLocation({ position }) {
   return null
 }
 
+function WelcomeModal({ onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>✕</button>
+        <h1>🌿 Panahon AI</h1>
+        <p className="modal-subtitle">
+          An intelligent weather monitoring and prediction system powered by Machine Learning and Geographic Information Systems (GIS), designed to serve communities across the Philippines with accurate 6-hour weather forecasts.
+        </p>
+        
+        <div className="modal-section">
+          <h3>🗺️ On-Demand Monitoring</h3>
+          <p>Panahon AI fetches real-time weather data for any municipality you search, using the Open-Meteo API. No unnecessary data collection — only the locations that matter to you.</p>
+        </div>
+        
+        <div className="modal-section">
+          <h3>🤖 AI-Powered Forecasting</h3>
+          <p>The system uses an XGBoost machine learning model to forecast temperature, humidity, cloud cover, and rain probability 6 hours ahead, helping you make informed decisions.</p>
+        </div>
+        
+        <div className="modal-section">
+          <h3>📊 Data-Driven Insights</h3>
+          <p>All weather readings, predictions, and search logs are stored in a structured database, building a growing dataset for model retraining, climate research, and policy-making.</p>
+        </div>
+        
+        <div className="modal-section">
+          <h3>🇵🇭 Why It Matters</h3>
+          <p>The Philippines faces increasing climate-related risks. Panahon AI empowers local governments, emergency responders, farmers, and communities with actionable weather data to make informed decisions and ultimately save lives.</p>
+        </div>
+        
+        <div className="modal-footer">
+          <p>Built by <strong>Engr. Brian Ezekiel D. Batalon, ECE, ECT, SO2</strong></p>
+          <button className="modal-start-btn" onClick={onClose}>Get Started</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [municipality, setMunicipality] = useState('')
   const [loading, setLoading] = useState(false)
   const [weatherData, setWeatherData] = useState(null)
   const [mapPosition, setMapPosition] = useState(null)
+  const [showWelcome, setShowWelcome] = useState(false)
 
   const mapRef = useRef(null)
+
+  useEffect(() => {
+    const visited = localStorage.getItem('panahon-ai-visited')
+    if (!visited) {
+      setShowWelcome(true)
+    }
+  }, [])
+
+  const closeWelcome = () => {
+    setShowWelcome(false)
+    localStorage.setItem('panahon-ai-visited', 'true')
+  }
 
   const handleSearch = async () => {
     if (!municipality.trim()) return
@@ -94,6 +146,78 @@ function App() {
 
   return (
     <div className="app">
+      {/* Welcome Modal */}
+      {showWelcome && <WelcomeModal onClose={closeWelcome} />}
+
+      {/* Sidebar */}
+      <div className="sidebar">
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon">🌿</div>
+          <div>
+            <h2>Panahon AI</h2>
+            <p>Weather Intelligence for the Philippines</p>
+          </div>
+        </div>
+
+        <div className="sidebar-search">
+          <input
+            type="text"
+            placeholder="Search any municipality..."
+            value={municipality}
+            onChange={(e) => setMunicipality(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <button onClick={handleSearch} disabled={loading}>
+            {loading ? '...' : '🔍'}
+          </button>
+        </div>
+
+        {weatherData && !weatherData.error && (
+          <div className="sidebar-weather">
+            <h3>📍 {weatherData.name}</h3>
+            <div className="sidebar-grid">
+              <div className="sidebar-item">
+                <span className="s-label">Temperature</span>
+                <span className="s-value">{weatherData.temp}°C</span>
+              </div>
+              <div className="sidebar-item">
+                <span className="s-label">Humidity</span>
+                <span className="s-value">{weatherData.humidity}%</span>
+              </div>
+              <div className="sidebar-item">
+                <span className="s-label">Cloud Cover</span>
+                <span className="s-value">{weatherData.clouds}%</span>
+              </div>
+              <div className="sidebar-item">
+                <span className="s-label">Rain</span>
+                <span className="s-value">{weatherData.rain} mm</span>
+              </div>
+              <div className="sidebar-item">
+                <span className="s-label">Condition</span>
+                <span className="s-value" style={{fontSize:'1.5rem'}}>
+                  {weatherData.condition <= 3 ? '☀️' : weatherData.condition <= 48 ? '☁️' : weatherData.condition <= 67 ? '🌧️' : '⛈️'}
+                </span>
+              </div>
+              <div className="sidebar-item">
+                <span className="s-label">AI 6-Hour Forecast</span>
+                <span className="s-value" style={{color:'#86efac', fontSize:'0.8rem'}}>Coming soon</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {weatherData && weatherData.error && (
+          <div className="sidebar-weather" style={{color:'#fca5a5', textAlign:'center'}}>
+            {weatherData.error}
+          </div>
+        )}
+
+        <div className="sidebar-footer">
+          <p>Built by <strong>Engr. Brian Ezekiel D. Batalon</strong></p>
+          <p className="credentials">ECE, ECT, SO2</p>
+        </div>
+      </div>
+
       {/* Map */}
       <div className="map-area">
         <MapContainer
@@ -131,74 +255,16 @@ function App() {
           )}
           <FlyToLocation position={mapPosition} />
         </MapContainer>
-      </div>
 
-      {/* Search Bar */}
-      <div className="search-overlay">
-        <input
-          type="text"
-          placeholder="Search any municipality in the Philippines..."
-          value={municipality}
-          onChange={(e) => setMunicipality(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        <button onClick={handleSearch} disabled={loading}>
-          {loading ? '...' : 'Search'}
-        </button>
-      </div>
-
-      {/* Weather Card */}
-      {weatherData && !weatherData.error && (
-        <div className="weather-card">
-          <div className="location">
-            {weatherData.name}
-            <span>Current conditions</span>
-          </div>
-          <div className="weather-grid">
-            <div className="weather-item">
-              <div className="label">Temp</div>
-              <div className="value">{weatherData.temp}°<span className="unit">C</span></div>
-            </div>
-            <div className="weather-item">
-              <div className="label">Humidity</div>
-              <div className="value">{weatherData.humidity}<span className="unit">%</span></div>
-            </div>
-            <div className="weather-item">
-              <div className="label">Clouds</div>
-              <div className="value">{weatherData.clouds}<span className="unit">%</span></div>
-            </div>
-            <div className="weather-item">
-              <div className="label">Rain</div>
-              <div className="value">{weatherData.rain}<span className="unit">mm</span></div>
-            </div>
-            <div className="weather-item">
-              <div className="label">Condition</div>
-              <div className="value" style={{fontSize:'1.2rem'}}>
-                {weatherData.condition <= 3 ? '☀️' : weatherData.condition <= 48 ? '☁️' : weatherData.condition <= 67 ? '🌧️' : '⛈️'}
-              </div>
-            </div>
-            <div className="weather-item">
-              <div className="label">AI 6h</div>
-              <div className="value" style={{fontSize:'0.75rem', color:'#86efac'}}>Soon</div>
-            </div>
-          </div>
+        {/* Legend */}
+        <div className="map-legend">
+          <h4>Temperature</h4>
+          <div className="legend-row"><div className="legend-dot" style={{background:'#ef4444'}}/> 35°C+</div>
+          <div className="legend-row"><div className="legend-dot" style={{background:'#f97316'}}/> 32-35°C</div>
+          <div className="legend-row"><div className="legend-dot" style={{background:'#eab308'}}/> 28-32°C</div>
+          <div className="legend-row"><div className="legend-dot" style={{background:'#22d3ee'}}/> 24-28°C</div>
+          <div className="legend-row"><div className="legend-dot" style={{background:'#3b82f6'}}/> &lt;24°C</div>
         </div>
-      )}
-
-      {weatherData && weatherData.error && (
-        <div className="weather-card" style={{textAlign:'center', color:'#fca5a5'}}>
-          {weatherData.error}
-        </div>
-      )}
-
-      {/* Legend */}
-      <div className="map-legend">
-        <h4>Temperature</h4>
-        <div className="legend-row"><div className="legend-dot" style={{background:'#ef4444'}}/> 35°C+</div>
-        <div className="legend-row"><div className="legend-dot" style={{background:'#f97316'}}/> 32-35°C</div>
-        <div className="legend-row"><div className="legend-dot" style={{background:'#eab308'}}/> 28-32°C</div>
-        <div className="legend-row"><div className="legend-dot" style={{background:'#22d3ee'}}/> 24-28°C</div>
-        <div className="legend-row"><div className="legend-dot" style={{background:'#3b82f6'}}/> &lt;24°C</div>
       </div>
     </div>
   )
