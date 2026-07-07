@@ -98,7 +98,7 @@ function WelcomeModal({ onClose }) {
         
         <div className="modal-section">
           <h3>🤖 AI-Powered Forecasting</h3>
-          <p>Uses an XGBoost machine learning model to forecast temperature, humidity, cloud cover, and rain probability 6, 12, and 24 hours ahead.</p>
+          <p>Uses XGBoost machine learning models to forecast temperature, humidity, cloud cover, and rain probability 6, 12, and 24 hours ahead.</p>
         </div>
         
         <div className="modal-section">
@@ -146,7 +146,7 @@ function Sidebar({ isOpen, onClose }) {
 
         <div className="sidebar-section">
           <h3>🤖 XGBoost ML</h3>
-          <p>AI-powered temperature predictions with 79.2% R² accuracy.</p>
+          <p>Multi-output AI model: Temp 78.8%, Humidity 67.8%, Clouds 49.7%, Rain predictions.</p>
         </div>
 
         <div className="sidebar-section">
@@ -173,7 +173,6 @@ function App() {
   const [municipality, setMunicipality] = useState('')
   const [loading, setLoading] = useState(false)
   const [weatherData, setWeatherData] = useState(null)
-  const [forecastData, setForecastData] = useState(null)
   const [aiPredictions, setAiPredictions] = useState(null)
   const [mapPosition, setMapPosition] = useState(null)
   const [showWelcome, setShowWelcome] = useState(true)
@@ -182,15 +181,12 @@ function App() {
 
   const mapRef = useRef(null)
 
-  const closeWelcome = () => {
-    setShowWelcome(false)
-  }
+  const closeWelcome = () => setShowWelcome(false)
 
   const handleSearch = async () => {
     if (!municipality.trim()) return
     setLoading(true)
     setWeatherData(null)
-    setForecastData(null)
     setAiPredictions(null)
     setMapPosition(null)
 
@@ -208,6 +204,8 @@ function App() {
 
       const { lat, lon, display_name } = geoData[0]
       const placeName = display_name.split(',')[0]
+      const latNum = parseFloat(lat)
+      const lonNum = parseFloat(lon)
 
       const weatherRes = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OWM_KEY}&units=metric`
@@ -223,8 +221,8 @@ function App() {
 
       setWeatherData({
         name: placeName,
-        lat: parseFloat(lat),
-        lon: parseFloat(lon),
+        lat: latNum,
+        lon: lonNum,
         temp: Math.round(weatherJson.main.temp),
         humidity: weatherJson.main.humidity,
         clouds: weatherJson.clouds.all,
@@ -243,67 +241,25 @@ function App() {
               humidity: weatherJson.main.humidity,
               cloud_cover: weatherJson.clouds.all,
             },
-            lat: parseFloat(lat),
-            lon: parseFloat(lon),
+            lat: latNum,
+            lon: lonNum,
             hours: [6, 12, 24]
           })
         })
         const predData = await predRes.json()
         setAiPredictions(predData.predictions)
-      } catch {
-        // AI prediction failed silently
-      }
+      } catch {}
 
-      try {
-        const fcController = new AbortController()
-        const fcTimeout = setTimeout(() => fcController.abort(), 8000)
-
-        const fcRes = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code&forecast_hours=24`,
-          { signal: fcController.signal }
-        )
-        clearTimeout(fcTimeout)
-
-        if (fcRes.ok) {
-          const fcJson = await fcRes.json()
-          setForecastData({
-            time: fcJson.hourly.time,
-            temperature_2m: fcJson.hourly.temperature_2m,
-            relative_humidity_2m: fcJson.hourly.relative_humidity_2m,
-            cloud_cover: fcJson.hourly.cloud_cover,
-            precipitation_probability: fcJson.hourly.precipitation_probability,
-            weather_code: fcJson.hourly.weather_code,
-          })
-        }
-      } catch {
-        // Forecast failed silently
-      }
-
-      setMapPosition([parseFloat(lat), parseFloat(lon)])
+      setMapPosition([latNum, lonNum])
     } catch {
       setWeatherData({ error: 'Failed to fetch weather data. Please try again.' })
     }
     setLoading(false)
   }
 
-  const getForecast = (hour) => {
-    if (!forecastData) return null
-    const idx = hour - 1
-    if (idx >= forecastData.time.length) return null
-    return {
-      temp: Math.round(forecastData.temperature_2m[idx]),
-      humidity: forecastData.relative_humidity_2m[idx],
-      clouds: forecastData.cloud_cover[idx],
-      rain: forecastData.precipitation_probability[idx],
-      condition: forecastData.weather_code[idx],
-    }
-  }
-
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleSearch()
   }
-
-  const currentForecast = getForecast(forecastHour)
 
   return (
     <div className="app">
@@ -337,9 +293,7 @@ function App() {
           <FlyToLocation position={mapPosition} />
         </MapContainer>
 
-        <button className="sidebar-toggle" onClick={() => setSidebarOpen(true)}>
-          ☰
-        </button>
+        <button className="sidebar-toggle" onClick={() => setSidebarOpen(true)}>☰</button>
 
         <div className="search-float">
           <input
@@ -378,42 +332,55 @@ function App() {
                 <span className="wc-value">
                   {forecastHour === 0 
                     ? `${weatherData.temp}°C`
-                    : aiPredictions 
-                      ? `${aiPredictions[`${forecastHour}h`]}°C`
-                      : currentForecast?.temp 
-                        ? `${currentForecast.temp}°C`
-                        : '—'
+                    : aiPredictions?.[`${forecastHour}h`]?.temperature 
+                      ? `${aiPredictions[`${forecastHour}h`].temperature}°C`
+                      : '—'
                   }
                 </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Humidity</span>
                 <span className="wc-value">
-                  {forecastHour === 0 ? weatherData.humidity : currentForecast?.humidity ?? '—'}%
+                  {forecastHour === 0 
+                    ? `${weatherData.humidity}%`
+                    : aiPredictions?.[`${forecastHour}h`]?.humidity 
+                      ? `${aiPredictions[`${forecastHour}h`].humidity}%`
+                      : '—'
+                  }
                 </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Clouds</span>
                 <span className="wc-value">
-                  {forecastHour === 0 ? weatherData.clouds : currentForecast?.clouds ?? '—'}%
+                  {forecastHour === 0 
+                    ? `${weatherData.clouds}%`
+                    : aiPredictions?.[`${forecastHour}h`]?.clouds 
+                      ? `${aiPredictions[`${forecastHour}h`].clouds}%`
+                      : '—'
+                  }
                 </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Rain</span>
                 <span className="wc-value">
-                  {forecastHour === 0 ? weatherData.rain : currentForecast?.rain ?? '—'}%
+                  {forecastHour === 0 
+                    ? `${weatherData.rain}%`
+                    : aiPredictions?.[`${forecastHour}h`]?.rain 
+                      ? `${Math.round(aiPredictions[`${forecastHour}h`].rain * 10)}%`
+                      : '—'
+                  }
                 </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Condition</span>
                 <span className="wc-value" style={{fontSize:'1.4rem'}}>
-                  {conditionEmoji(forecastHour === 0 ? weatherData.condition : currentForecast?.condition ?? 800)}
+                  {forecastHour === 0 ? conditionEmoji(weatherData.condition) : '🤖'}
                 </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">AI Model</span>
                 <span className="wc-value" style={{color:'#86efac', fontSize:'0.7rem'}}>
-                  {forecastHour === 0 ? 'Now' : aiPredictions ? 'XGBoost' : 'Open-Meteo'}
+                  {forecastHour === 0 ? 'Now' : aiPredictions ? 'XGBoost AI' : '...'}
                 </span>
               </div>
             </div>

@@ -7,12 +7,16 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
-# Load model once at startup
-MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'ml', 'panahon_ai_xgboost_model.json')
-model = xgb.XGBRegressor()
-model.load_model(MODEL_PATH)
+# Load all models
+MODEL_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'ml')
+models = {}
+for name in ['temperature', 'humidity', 'clouds', 'precipitation']:
+    path = os.path.join(MODEL_DIR, f'panahon_ai_{name}_model.json')
+    m = xgb.XGBRegressor()
+    m.load_model(path)
+    models[name] = m
 
-def predict_temperature(current_data, lat, lon, target_hour=6):
+def predict_all(current_data, lat, lon, target_hour=6):
     now = datetime.now()
     target_dt = datetime.now().replace(hour=(now.hour + target_hour) % 24)
     hour = target_dt.hour
@@ -27,8 +31,7 @@ def predict_temperature(current_data, lat, lon, target_hour=6):
         current_data.get('precipitation', 0),
         current_data.get('wind_speed', 0),
         current_data.get('wind_direction', 0),
-        lat,
-        lon,
+        lat, lon,
         np.sin(2 * np.pi * hour / 24),
         np.cos(2 * np.pi * hour / 24),
         np.sin(2 * np.pi * month / 12),
@@ -37,8 +40,12 @@ def predict_temperature(current_data, lat, lon, target_hour=6):
         np.cos(2 * np.pi * day / 31),
     ]])
     
-    prediction = model.predict(features)[0]
-    return round(float(prediction), 1)
+    return {
+        'temperature': round(float(models['temperature'].predict(features)[0]), 1),
+        'humidity': round(float(models['humidity'].predict(features)[0]), 1),
+        'clouds': round(float(models['clouds'].predict(features)[0]), 1),
+        'rain': round(float(models['precipitation'].predict(features)[0]), 1),
+    }
 
 class CurrentWeather(BaseModel):
     temperature: float
@@ -73,9 +80,7 @@ async def predict(request: PredictionRequest):
         
         predictions = {}
         for h in request.hours:
-            predictions[f"{h}h"] = predict_temperature(
-                current_data, request.lat, request.lon, h
-            )
+            predictions[f"{h}h"] = predict_all(current_data, request.lat, request.lon, h)
         
         return PredictionResponse(predictions=predictions)
     except Exception as e:
