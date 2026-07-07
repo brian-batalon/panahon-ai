@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://panahon-ai-production.up.railway.app'
 
 function App() {
   const [municipality, setMunicipality] = useState('')
