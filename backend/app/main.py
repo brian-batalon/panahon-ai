@@ -1,5 +1,9 @@
 from dotenv import load_dotenv
-load_dotenv()
+import os
+
+# Load .env for local dev, but use system env vars if available (Railway)
+if os.getenv("RAILWAY_ENVIRONMENT") is None:
+    load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
