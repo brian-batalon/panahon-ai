@@ -4,7 +4,6 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
 
-// Fix Leaflet default icon
 import iconUrl from 'leaflet/dist/images/marker-icon.png'
 import iconShadow from 'leaflet/dist/images/marker-shadow.png'
 
@@ -188,6 +187,7 @@ function App() {
     setMapPosition(null)
 
     try {
+      // Geocode
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(municipality)},Philippines&format=json&limit=1`
       )
@@ -202,9 +202,22 @@ function App() {
       const { lat, lon, display_name } = geoData[0]
       const placeName = display_name.split(',')[0]
 
+      // Fetch weather with timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000)
+
       const weatherRes = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code&hourly=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code&forecast_hours=24`
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code&hourly=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code&forecast_hours=24`,
+        { signal: controller.signal }
       )
+      clearTimeout(timeoutId)
+
+      if (!weatherRes.ok) {
+        setWeatherData({ error: 'Weather service unavailable. Try again later.' })
+        setLoading(false)
+        return
+      }
+
       const weatherJson = await weatherRes.json()
       const current = weatherJson.current
 
@@ -219,7 +232,6 @@ function App() {
         condition: current.weather_code,
       })
 
-      // Store hourly forecast
       const hourly = weatherJson.hourly
       setForecastData({
         time: hourly.time,
@@ -231,8 +243,12 @@ function App() {
       })
 
       setMapPosition([parseFloat(lat), parseFloat(lon)])
-    } catch {
-      setWeatherData({ error: 'Failed to fetch weather data.' })
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        setWeatherData({ error: 'Request timed out. Check your connection and try again.' })
+      } else {
+        setWeatherData({ error: 'Failed to fetch weather data. Please try again.' })
+      }
     }
     setLoading(false)
   }
@@ -258,13 +274,9 @@ function App() {
 
   return (
     <div className="app">
-      {/* Welcome Modal */}
       {showWelcome && <WelcomeModal onClose={closeWelcome} />}
-
-      {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Map */}
       <div className="map-area">
         <MapContainer
           ref={mapRef}
@@ -292,12 +304,10 @@ function App() {
           <FlyToLocation position={mapPosition} />
         </MapContainer>
 
-        {/* Sidebar Toggle Button */}
         <button className="sidebar-toggle" onClick={() => setSidebarOpen(true)}>
           ☰
         </button>
 
-        {/* Floating Search */}
         <div className="search-float">
           <input
             type="text"
@@ -311,14 +321,12 @@ function App() {
           </button>
         </div>
 
-        {/* Weather Card */}
         {weatherData && !weatherData.error && (
           <div className="weather-card">
             <div className="weather-card-header">
               <span className="weather-location">📍 {weatherData.name}</span>
             </div>
 
-            {/* Forecast Tabs */}
             <div className="forecast-tabs">
               {[6, 12, 24].map(h => (
                 <button
@@ -331,7 +339,6 @@ function App() {
               ))}
             </div>
 
-            {/* Current + Forecast Grid */}
             <div className="weather-card-grid">
               <div className="wc-item">
                 <span className="wc-label">Temp</span>
