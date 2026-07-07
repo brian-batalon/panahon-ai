@@ -301,16 +301,6 @@ function App() {
             {weatherData.error}
           </div>
         )}
-
-        {/* Legend */}
-        <div className="map-legend">
-          <h4>Temperature</h4>
-          <div className="legend-row"><div className="legend-dot" style={{background:'#ef4444'}}/> 35°C+</div>
-          <div className="legend-row"><div className="legend-dot" style={{background:'#f97316'}}/> 32-35°C</div>
-          <div className="legend-row"><div className="legend-dot" style={{background:'#eab308'}}/> 28-32°C</div>
-          <div className="legend-row"><div className="legend-dot" style={{background:'#22d3ee'}}/> 24-28°C</div>
-          <div className="legend-row"><div className="legend-dot" style={{background:'#3b82f6'}}/> &lt;24°C</div>
-        </div>
       </div>
     </div>
   )
