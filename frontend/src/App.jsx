@@ -17,6 +17,7 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://panahon-ai-production.up.railway.app'
+const OWM_KEY = '1ef9f1f0fe4e2692a69ad484915371cd'
 
 const PH_CENTER = [12.8797, 121.7740]
 const DEFAULT_ZOOM = 6
@@ -30,10 +31,15 @@ function tempColor(temp) {
 }
 
 function conditionEmoji(code) {
-  if (code <= 3) return '☀️'
-  if (code <= 48) return '☁️'
-  if (code <= 67) return '🌧️'
-  return '⛈️'
+  if (code >= 200 && code < 300) return '⛈️'
+  if (code >= 300 && code < 600) return '🌧️'
+  if (code >= 600 && code < 700) return '🌨️'
+  if (code >= 700 && code < 800) return '🌫️'
+  if (code === 800) return '☀️'
+  if (code === 801) return '🌤️'
+  if (code === 802) return '⛅'
+  if (code >= 803) return '☁️'
+  return '🌡️'
 }
 
 function createPinIcon(temp, emoji) {
@@ -80,14 +86,14 @@ function WelcomeModal({ onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>✕</button>
-        <h1>🌿 Panahon AI</h1>
+        <h1>⛅ Panahon AI</h1>
         <p className="modal-subtitle">
           An intelligent weather monitoring and prediction system powered by Machine Learning and Geographic Information Systems (GIS), designed to serve communities across the Philippines with accurate weather forecasts.
         </p>
         
         <div className="modal-section">
           <h3>🗺️ On-Demand Monitoring</h3>
-          <p>Panahon AI fetches real-time weather data for any municipality you search, using the Open-Meteo API.</p>
+          <p>Panahon AI fetches real-time weather data for any municipality you search, using the OpenWeatherMap and Open-Meteo APIs.</p>
         </div>
         
         <div className="modal-section">
@@ -122,7 +128,7 @@ function Sidebar({ isOpen, onClose }) {
         <button className="sidebar-close" onClick={onClose}>✕</button>
         
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">🌿</div>
+          <div className="sidebar-logo-icon">⛅</div>
           <div>
             <h2>Panahon AI</h2>
             <p>Weather Intelligence for the Philippines</p>
@@ -144,8 +150,8 @@ function Sidebar({ isOpen, onClose }) {
         </div>
 
         <div className="sidebar-section">
-          <h3>📡 Open-Meteo API</h3>
-          <p>Free and open weather data with no API keys required.</p>
+          <h3>📡 OpenWeatherMap + Open-Meteo</h3>
+          <p>Free and open weather data APIs for reliable forecasts.</p>
         </div>
 
         <div className="sidebar-section">
@@ -187,7 +193,6 @@ function App() {
     setMapPosition(null)
 
     try {
-      // Geocode
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(municipality)},Philippines&format=json&limit=1`
       )
@@ -202,15 +207,10 @@ function App() {
       const { lat, lon, display_name } = geoData[0]
       const placeName = display_name.split(',')[0]
 
-      // Fetch weather with timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 15000)
-
+      // Fetch current weather from OpenWeatherMap
       const weatherRes = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code&hourly=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code&forecast_hours=24`,
-        { signal: controller.signal }
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OWM_KEY}&units=metric`
       )
-      clearTimeout(timeoutId)
 
       if (!weatherRes.ok) {
         setWeatherData({ error: 'Weather service unavailable. Try again later.' })
@@ -219,36 +219,47 @@ function App() {
       }
 
       const weatherJson = await weatherRes.json()
-      const current = weatherJson.current
 
       setWeatherData({
         name: placeName,
         lat: parseFloat(lat),
         lon: parseFloat(lon),
-        temp: Math.round(current.temperature_2m),
-        humidity: current.relative_humidity_2m,
-        clouds: current.cloud_cover,
-        rain: current.precipitation_probability || 0,
-        condition: current.weather_code,
+        temp: Math.round(weatherJson.main.temp),
+        humidity: weatherJson.main.humidity,
+        clouds: weatherJson.clouds.all,
+        rain: weatherJson.rain ? Math.round(weatherJson.rain['1h'] * 100 / 10) || 0 : 0,
+        condition: weatherJson.weather[0].id,
       })
 
-      const hourly = weatherJson.hourly
-      setForecastData({
-        time: hourly.time,
-        temperature_2m: hourly.temperature_2m,
-        relative_humidity_2m: hourly.relative_humidity_2m,
-        cloud_cover: hourly.cloud_cover,
-        precipitation_probability: hourly.precipitation_probability,
-        weather_code: hourly.weather_code,
-      })
+      // Try Open-Meteo for hourly forecast
+      try {
+        const fcController = new AbortController()
+        const fcTimeout = setTimeout(() => fcController.abort(), 8000)
+
+        const fcRes = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code&forecast_hours=24`,
+          { signal: fcController.signal }
+        )
+        clearTimeout(fcTimeout)
+
+        if (fcRes.ok) {
+          const fcJson = await fcRes.json()
+          setForecastData({
+            time: fcJson.hourly.time,
+            temperature_2m: fcJson.hourly.temperature_2m,
+            relative_humidity_2m: fcJson.hourly.relative_humidity_2m,
+            cloud_cover: fcJson.hourly.cloud_cover,
+            precipitation_probability: fcJson.hourly.precipitation_probability,
+            weather_code: fcJson.hourly.weather_code,
+          })
+        }
+      } catch {
+        // Forecast failed silently, current weather still works
+      }
 
       setMapPosition([parseFloat(lat), parseFloat(lon)])
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        setWeatherData({ error: 'Request timed out. Check your connection and try again.' })
-      } else {
-        setWeatherData({ error: 'Failed to fetch weather data. Please try again.' })
-      }
+    } catch {
+      setWeatherData({ error: 'Failed to fetch weather data. Please try again.' })
     }
     setLoading(false)
   }
@@ -367,7 +378,7 @@ function App() {
               <div className="wc-item">
                 <span className="wc-label">Condition</span>
                 <span className="wc-value" style={{fontSize:'1.4rem'}}>
-                  {conditionEmoji(forecastHour === 6 ? weatherData.condition : currentForecast?.condition ?? 0)}
+                  {conditionEmoji(forecastHour === 6 ? weatherData.condition : currentForecast?.condition ?? 800)}
                 </span>
               </div>
               <div className="wc-item">
