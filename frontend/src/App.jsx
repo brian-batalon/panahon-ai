@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -18,12 +18,10 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://panahon-ai-production.up.railway.app'
-const OWM_KEY = '1ef9f1f0fe4e2692a69ad484915371cd'
 
 const PH_CENTER = [12.8797, 121.7740]
 const DEFAULT_ZOOM = 6
 
-// Weather color scale
 function tempColor(temp) {
   if (temp >= 35) return '#d63031'
   if (temp >= 32) return '#e17055'
@@ -38,124 +36,64 @@ function FlyToLocation({ position }) {
   return null
 }
 
-// Weather markers component
-function WeatherMarkers({ data, onMarkerClick }) {
-  const map = useMap()
-  
-  useEffect(() => {
-    if (!data || !data.length) return
-    
-    const markers = data.map(city => {
-      const color = tempColor(city.temp)
-      const icon = L.divIcon({
-        className: 'weather-marker',
-        html: `<div style="
-          width:14px;height:14px;border-radius:50%;
-          background:${color};border:2px solid white;
-          box-shadow:0 1px 4px rgba(0,0,0,0.3);
-        "></div>`,
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
-      })
-      
-      const marker = L.marker([city.lat, city.lon], { icon })
-        .bindPopup(`
-          <strong>${city.name}</strong><br/>
-          🌡️ ${city.temp}°C &nbsp; ☁️ ${city.clouds}%<br/>
-          💧 ${city.humidity}% &nbsp; 🌧️ ${city.rain || 0}mm
-        `)
-      
-      marker.on('click', () => onMarkerClick(city))
-      return marker
-    })
-    
-    const group = L.featureGroup(markers).addTo(map)
-    map.fitBounds(group.getBounds().pad(0.1))
-    
-    return () => map.removeLayer(group)
-  }, [data, map, onMarkerClick])
-  
-  return null
-}
-
 function App() {
   const [municipality, setMunicipality] = useState('')
   const [loading, setLoading] = useState(false)
-  const [prediction, setPrediction] = useState(null)
-  const [mapPosition, setMapPosition] = useState(null)
   const [weatherData, setWeatherData] = useState(null)
-  const [selectedCity, setSelectedCity] = useState(null)
+  const [mapPosition, setMapPosition] = useState(null)
+
   const mapRef = useRef(null)
-
-  // Fetch weather for major PH cities on load
-  useEffect(() => {
-    const cities = [
-      { name: 'Manila', lat: 14.5995, lon: 120.9842 },
-      { name: 'Cebu', lat: 10.3157, lon: 123.8854 },
-      { name: 'Davao', lat: 7.1907, lon: 125.4553 },
-      { name: 'Baguio', lat: 16.4023, lon: 120.5960 },
-      { name: 'Zamboanga', lat: 6.9214, lon: 122.0790 },
-      { name: 'Cagayan de Oro', lat: 8.4542, lon: 124.6319 },
-      { name: 'Iloilo', lat: 10.7202, lon: 122.5621 },
-      { name: 'Tacloban', lat: 11.2427, lon: 125.0072 },
-      { name: 'Puerto Princesa', lat: 9.7381, lon: 118.7372 },
-      { name: 'Legazpi', lat: 13.1391, lon: 123.7438 },
-      { name: 'Tuguegarao', lat: 17.6132, lon: 121.7269 },
-      { name: 'General Santos', lat: 6.1139, lon: 125.1717 },
-    ]
-
-    Promise.all(
-      cities.map(async city => {
-        try {
-          const res = await fetch(
-            `https://api.openweathermap.org/data/2.5/weather?lat=${city.lat}&lon=${city.lon}&appid=${OWM_KEY}&units=metric`
-          )
-          const data = await res.json()
-          return {
-            name: city.name,
-            lat: city.lat,
-            lon: city.lon,
-            temp: Math.round(data.main.temp),
-            humidity: data.main.humidity,
-            clouds: data.clouds.all,
-            rain: data.rain ? data.rain['1h'] || 0 : 0,
-            condition: data.weather[0].main,
-          }
-        } catch {
-          return null
-        }
-      })
-    ).then(results => {
-      setWeatherData(results.filter(Boolean))
-    })
-  }, [])
 
   const handleSearch = async () => {
     if (!municipality) return
     setLoading(true)
+    setWeatherData(null)
+    setMapPosition(null)
+
     try {
-      const res = await fetch(`${API_URL}/health`)
-      const data = await res.json()
-      setPrediction({
-        temperature: 32,
-        humidity: 78,
-        rainProbability: 45,
-      })
-      setMapPosition([14.5265, 121.1536])
+      // Geocode the municipality name to get coordinates
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(municipality)},Philippines&format=json&limit=1`
+      )
+      const geoData = await geoRes.json()
+
+      if (!geoData.length) {
+        setWeatherData({ error: 'Location not found. Try a different name.' })
+        setLoading(false)
+        return
+      }
+
+      const { lat, lon, display_name } = geoData[0]
+      const placeName = display_name.split(',')[0]
+
+      // Fetch weather from Open-Meteo
+      const weatherRes = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,cloud_cover,rain,weather_code`
+      )
+      const weatherJson = await weatherRes.json()
+      const current = weatherJson.current
+
+      const result = {
+        name: placeName,
+        lat: parseFloat(lat),
+        lon: parseFloat(lon),
+        temp: Math.round(current.temperature_2m),
+        humidity: current.relative_humidity_2m,
+        clouds: current.cloud_cover,
+        rain: current.rain || 0,
+        condition: current.weather_code,
+      }
+
+      setWeatherData(result)
+      setMapPosition([parseFloat(lat), parseFloat(lon)])
     } catch (err) {
-      setPrediction({ error: err.message })
+      setWeatherData({ error: 'Failed to fetch weather data.' })
     }
     setLoading(false)
   }
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleSearch()
-  }
-
-  const handleMarkerClick = (city) => {
-    setSelectedCity(city)
-    setMunicipality(city.name)
-    setMapPosition([city.lat, city.lon])
   }
 
   return (
@@ -187,52 +125,56 @@ function App() {
             <span className="search-icon">🔍</span>
             <input
               type="text"
-              placeholder="Search municipality..."
+              placeholder="Search any municipality..."
               value={municipality}
               onChange={(e) => setMunicipality(e.target.value)}
               onKeyDown={handleKeyDown}
             />
             <button onClick={handleSearch} disabled={loading}>
-              {loading ? 'Predicting...' : 'Get AI Forecast'}
+              {loading ? 'Searching...' : 'Search'}
             </button>
           </div>
 
-          {/* Prediction */}
-          <div className="prediction-card">
-            <h3>📍 {selectedCity ? selectedCity.name : 'Select a city or search'}</h3>
-            {selectedCity ? (
+          {/* Weather Result */}
+          {weatherData && !weatherData.error && (
+            <div className="prediction-card">
+              <h3>📍 {weatherData.name}</h3>
               <div className="prediction-grid">
                 <div className="prediction-item">
                   <div className="label">Temperature</div>
-                  <div className="value">{selectedCity.temp}°<span className="unit">C</span></div>
+                  <div className="value">{weatherData.temp}°<span className="unit">C</span></div>
                 </div>
                 <div className="prediction-item">
                   <div className="label">Humidity</div>
-                  <div className="value">{selectedCity.humidity}<span className="unit">%</span></div>
+                  <div className="value">{weatherData.humidity}<span className="unit">%</span></div>
                 </div>
                 <div className="prediction-item">
                   <div className="label">Clouds</div>
-                  <div className="value">{selectedCity.clouds}<span className="unit">%</span></div>
+                  <div className="value">{weatherData.clouds}<span className="unit">%</span></div>
                 </div>
                 <div className="prediction-item">
                   <div className="label">Rain</div>
-                  <div className="value">{selectedCity.rain}<span className="unit">mm</span></div>
+                  <div className="value">{weatherData.rain}<span className="unit">mm</span></div>
                 </div>
                 <div className="prediction-item">
                   <div className="label">Condition</div>
-                  <div className="value" style={{fontSize:'0.9rem'}}>{selectedCity.condition === 'Clouds' ? '☁️' : selectedCity.condition === 'Rain' ? '🌧️' : '☀️'}</div>
+                  <div className="value" style={{fontSize:'0.9rem'}}>
+                    {weatherData.condition <= 3 ? '☀️' : weatherData.condition <= 48 ? '☁️' : weatherData.condition <= 67 ? '🌧️' : '⛈️'}
+                  </div>
                 </div>
                 <div className="prediction-item">
                   <div className="label">AI Forecast</div>
                   <div className="value" style={{fontSize:'0.75rem', color:'#4a6741'}}>Coming soon</div>
                 </div>
               </div>
-            ) : (
-              <div className="prediction-empty">
-                Click a city on the map or search above
-              </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {weatherData && weatherData.error && (
+            <div className="prediction-card">
+              <div className="prediction-empty" style={{color: '#d63031'}}>{weatherData.error}</div>
+            </div>
+          )}
         </div>
 
         {/* Map */}
@@ -248,12 +190,26 @@ function App() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {weatherData && (
-              <WeatherMarkers data={weatherData} onMarkerClick={handleMarkerClick} />
-            )}
-            {mapPosition && (
-              <Marker position={mapPosition}>
-                <Popup>{municipality}</Popup>
+            {mapPosition && weatherData && !weatherData.error && (
+              <Marker
+                position={mapPosition}
+                icon={L.divIcon({
+                  className: 'weather-marker',
+                  html: `<div style="
+                    width:16px;height:16px;border-radius:50%;
+                    background:${tempColor(weatherData.temp)};
+                    border:3px solid white;
+                    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+                  "></div>`,
+                  iconSize: [16, 16],
+                  iconAnchor: [8, 8],
+                })}
+              >
+                <Popup>
+                  <strong>{weatherData.name}</strong><br/>
+                  🌡️ {weatherData.temp}°C<br/>
+                  💧 {weatherData.humidity}% &nbsp; ☁️ {weatherData.clouds}%
+                </Popup>
               </Marker>
             )}
             <FlyToLocation position={mapPosition} />
