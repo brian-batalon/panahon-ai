@@ -30,6 +30,46 @@ function tempColor(temp) {
   return '#3b82f6'
 }
 
+function conditionEmoji(code) {
+  if (code <= 3) return '☀️'
+  if (code <= 48) return '☁️'
+  if (code <= 67) return '🌧️'
+  return '⛈️'
+}
+
+function createPinIcon(temp, emoji) {
+  return L.divIcon({
+    className: 'custom-pin',
+    html: `
+      <div style="
+        display:flex;flex-direction:column;align-items:center;
+        transform:translate(-50%,-100%);
+      ">
+        <div style="
+          background:rgba(26,26,26,0.9);
+          backdrop-filter:blur(8px);
+          border:2px solid ${tempColor(temp)};
+          border-radius:12px;
+          padding:4px 8px;
+          font-size:0.75rem;
+          font-weight:700;
+          color:white;
+          white-space:nowrap;
+          margin-bottom:2px;
+        ">${temp}°C ${emoji}</div>
+        <div style="
+          width:0;height:0;
+          border-left:6px solid transparent;
+          border-right:6px solid transparent;
+          border-top:8px solid ${tempColor(temp)};
+        "></div>
+      </div>
+    `,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  })
+}
+
 function FlyToLocation({ position }) {
   const map = useMap()
   if (position) map.flyTo(position, 11, { duration: 1.2 })
@@ -43,27 +83,27 @@ function WelcomeModal({ onClose }) {
         <button className="modal-close" onClick={onClose}>✕</button>
         <h1>🌿 Panahon AI</h1>
         <p className="modal-subtitle">
-          An intelligent weather monitoring and prediction system powered by Machine Learning and Geographic Information Systems (GIS), designed to serve communities across the Philippines with accurate 6-hour weather forecasts.
+          An intelligent weather monitoring and prediction system powered by Machine Learning and Geographic Information Systems (GIS), designed to serve communities across the Philippines with accurate weather forecasts.
         </p>
         
         <div className="modal-section">
           <h3>🗺️ On-Demand Monitoring</h3>
-          <p>Panahon AI fetches real-time weather data for any municipality you search, using the Open-Meteo API. No unnecessary data collection — only the locations that matter to you.</p>
+          <p>Panahon AI fetches real-time weather data for any municipality you search, using the Open-Meteo API.</p>
         </div>
         
         <div className="modal-section">
           <h3>🤖 AI-Powered Forecasting</h3>
-          <p>The system uses an XGBoost machine learning model to forecast temperature, humidity, cloud cover, and rain probability 6 hours ahead, helping you make informed decisions.</p>
+          <p>Uses an XGBoost machine learning model to forecast temperature, humidity, cloud cover, and rain probability 6, 12, and 24 hours ahead.</p>
         </div>
         
         <div className="modal-section">
           <h3>📊 Data-Driven Insights</h3>
-          <p>All weather readings, predictions, and search logs are stored in a structured database, building a growing dataset for model retraining, climate research, and policy-making.</p>
+          <p>All readings and predictions are stored for model retraining, climate research, and policy-making.</p>
         </div>
         
         <div className="modal-section">
           <h3>🇵🇭 Why It Matters</h3>
-          <p>The Philippines faces increasing climate-related risks. Panahon AI empowers local governments, emergency responders, farmers, and communities with actionable weather data to make informed decisions and ultimately save lives.</p>
+          <p>The Philippines faces increasing climate-related risks. Panahon AI empowers communities with actionable weather data.</p>
         </div>
         
         <div className="modal-footer">
@@ -91,7 +131,7 @@ function Sidebar({ isOpen, onClose }) {
         </div>
 
         <div className="sidebar-info">
-          <p>An intelligent weather monitoring and prediction system powered by Machine Learning and GIS, providing 6-hour forecasts for any municipality in the Philippines.</p>
+          <p>An intelligent weather monitoring and prediction system powered by Machine Learning and GIS, providing 6, 12, and 24-hour forecasts for any municipality in the Philippines.</p>
         </div>
 
         <div className="sidebar-section">
@@ -128,28 +168,23 @@ function App() {
   const [municipality, setMunicipality] = useState('')
   const [loading, setLoading] = useState(false)
   const [weatherData, setWeatherData] = useState(null)
+  const [forecastData, setForecastData] = useState(null)
   const [mapPosition, setMapPosition] = useState(null)
-  const [showWelcome, setShowWelcome] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [forecastHour, setForecastHour] = useState(6)
 
   const mapRef = useRef(null)
 
-  useEffect(() => {
-    const visited = localStorage.getItem('panahon-ai-visited')
-    if (!visited) {
-      setShowWelcome(true)
-    }
-  }, [])
-
   const closeWelcome = () => {
     setShowWelcome(false)
-    localStorage.setItem('panahon-ai-visited', 'true')
   }
 
   const handleSearch = async () => {
     if (!municipality.trim()) return
     setLoading(true)
     setWeatherData(null)
+    setForecastData(null)
     setMapPosition(null)
 
     try {
@@ -168,7 +203,7 @@ function App() {
       const placeName = display_name.split(',')[0]
 
       const weatherRes = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,cloud_cover,rain,weather_code`
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code&hourly=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code&forecast_hours=24`
       )
       const weatherJson = await weatherRes.json()
       const current = weatherJson.current
@@ -180,9 +215,21 @@ function App() {
         temp: Math.round(current.temperature_2m),
         humidity: current.relative_humidity_2m,
         clouds: current.cloud_cover,
-        rain: current.rain || 0,
+        rain: current.precipitation_probability || 0,
         condition: current.weather_code,
       })
+
+      // Store hourly forecast
+      const hourly = weatherJson.hourly
+      setForecastData({
+        time: hourly.time,
+        temperature_2m: hourly.temperature_2m,
+        relative_humidity_2m: hourly.relative_humidity_2m,
+        cloud_cover: hourly.cloud_cover,
+        precipitation_probability: hourly.precipitation_probability,
+        weather_code: hourly.weather_code,
+      })
+
       setMapPosition([parseFloat(lat), parseFloat(lon)])
     } catch {
       setWeatherData({ error: 'Failed to fetch weather data.' })
@@ -190,9 +237,24 @@ function App() {
     setLoading(false)
   }
 
+  const getForecast = (hour) => {
+    if (!forecastData) return null
+    const idx = hour - 1
+    if (idx >= forecastData.time.length) return null
+    return {
+      temp: Math.round(forecastData.temperature_2m[idx]),
+      humidity: forecastData.relative_humidity_2m[idx],
+      clouds: forecastData.cloud_cover[idx],
+      rain: forecastData.precipitation_probability[idx],
+      condition: forecastData.weather_code[idx],
+    }
+  }
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleSearch()
   }
+
+  const currentForecast = getForecast(forecastHour)
 
   return (
     <div className="app">
@@ -218,22 +280,12 @@ function App() {
           {mapPosition && weatherData && !weatherData.error && (
             <Marker
               position={mapPosition}
-              icon={L.divIcon({
-                className: 'custom-marker',
-                html: `<div style="
-                  width:18px;height:18px;border-radius:50%;
-                  background:${tempColor(weatherData.temp)};
-                  border:3px solid white;
-                  box-shadow:0 2px 10px rgba(0,0,0,0.5);
-                "></div>`,
-                iconSize: [18, 18],
-                iconAnchor: [9, 9],
-              })}
+              icon={createPinIcon(weatherData.temp, conditionEmoji(weatherData.condition))}
             >
               <Popup>
                 <strong>{weatherData.name}</strong><br/>
                 🌡️ {weatherData.temp}°C &nbsp; 💧 {weatherData.humidity}%<br/>
-                ☁️ Clouds: {weatherData.clouds}%
+                ☁️ Clouds: {weatherData.clouds}% &nbsp; 🌧️ Rain: {weatherData.rain}%
               </Popup>
             </Marker>
           )}
@@ -265,32 +317,57 @@ function App() {
             <div className="weather-card-header">
               <span className="weather-location">📍 {weatherData.name}</span>
             </div>
+
+            {/* Forecast Tabs */}
+            <div className="forecast-tabs">
+              {[6, 12, 24].map(h => (
+                <button
+                  key={h}
+                  className={`forecast-tab ${forecastHour === h ? 'active' : ''}`}
+                  onClick={() => setForecastHour(h)}
+                >
+                  {h}h
+                </button>
+              ))}
+            </div>
+
+            {/* Current + Forecast Grid */}
             <div className="weather-card-grid">
               <div className="wc-item">
                 <span className="wc-label">Temp</span>
-                <span className="wc-value">{weatherData.temp}°C</span>
+                <span className="wc-value">
+                  {forecastHour === 6 ? weatherData.temp : currentForecast?.temp ?? '—'}°C
+                </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Humidity</span>
-                <span className="wc-value">{weatherData.humidity}%</span>
+                <span className="wc-value">
+                  {forecastHour === 6 ? weatherData.humidity : currentForecast?.humidity ?? '—'}%
+                </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Clouds</span>
-                <span className="wc-value">{weatherData.clouds}%</span>
+                <span className="wc-value">
+                  {forecastHour === 6 ? weatherData.clouds : currentForecast?.clouds ?? '—'}%
+                </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Rain</span>
-                <span className="wc-value">{weatherData.rain}mm</span>
+                <span className="wc-value">
+                  {forecastHour === 6 ? weatherData.rain : currentForecast?.rain ?? '—'}%
+                </span>
               </div>
               <div className="wc-item">
                 <span className="wc-label">Condition</span>
                 <span className="wc-value" style={{fontSize:'1.4rem'}}>
-                  {weatherData.condition <= 3 ? '☀️' : weatherData.condition <= 48 ? '☁️' : weatherData.condition <= 67 ? '🌧️' : '⛈️'}
+                  {conditionEmoji(forecastHour === 6 ? weatherData.condition : currentForecast?.condition ?? 0)}
                 </span>
               </div>
               <div className="wc-item">
-                <span className="wc-label">AI 6h</span>
-                <span className="wc-value" style={{color:'#86efac', fontSize:'0.75rem'}}>Soon</span>
+                <span className="wc-label">Forecast</span>
+                <span className="wc-value" style={{color:'#86efac', fontSize:'0.75rem'}}>
+                  {forecastHour === 6 ? 'Now' : `${forecastHour}h`}
+                </span>
               </div>
             </div>
           </div>
