@@ -213,6 +213,7 @@ body {
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
+  overflow: hidden;
   width: 360px;
   max-width: 60vw;
 }
