@@ -18,7 +18,6 @@ L.Marker.prototype.options.icon = DefaultIcon
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://panahon-ai-production.up.railway.app'
 
-
 const PH_CENTER = [12.8797, 121.7740]
 const DEFAULT_ZOOM = 6
 
@@ -190,21 +189,53 @@ function App() {
   const [showWelcome, setShowWelcome] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [forecastHour, setForecastHour] = useState(0)
+  const [suggestions, setSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
 
   const mapRef = useRef(null)
+  const searchRef = useRef(null)
 
   const closeWelcome = () => setShowWelcome(false)
 
-  const handleSearch = async () => {
-    if (!municipality.trim()) return
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const fetchSuggestions = async (query) => {
+    if (query.length < 2) {
+      setSuggestions([])
+      return
+    }
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)},Philippines&format=json&limit=5`
+      )
+      const data = await res.json()
+      setSuggestions(data.map(d => d.display_name.split(',')[0]))
+    } catch {
+      setSuggestions([])
+    }
+  }
+
+  const handleSearch = async (name) => {
+    const searchTerm = name || municipality
+    if (!searchTerm.trim()) return
     setLoading(true)
     setWeatherData(null)
     setAiPredictions(null)
     setMapPosition(null)
+    setShowSuggestions(false)
+    setSuggestions([])
 
     try {
       const geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(municipality)},Philippines&format=json&limit=1`
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchTerm)},Philippines&format=json&limit=1`
       )
       const geoData = await geoRes.json()
 
@@ -218,6 +249,7 @@ function App() {
       const placeName = display_name.split(',')[0]
       const latNum = parseFloat(lat)
       const lonNum = parseFloat(lon)
+      setMunicipality(placeName)
 
       const weatherRes = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,cloud_cover,precipitation_probability,weather_code`
@@ -307,23 +339,43 @@ function App() {
 
         <button className="sidebar-toggle" onClick={() => setSidebarOpen(true)}>☰</button>
 
-        <div className="search-float">
+        <div className="search-float" ref={searchRef}>
           <input
             type="text"
             placeholder="Search municipality..."
             value={municipality}
-            onChange={(e) => setMunicipality(e.target.value)}
+            onChange={(e) => {
+              setMunicipality(e.target.value)
+              fetchSuggestions(e.target.value)
+              setShowSuggestions(true)
+            }}
             onKeyDown={handleKeyDown}
+            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+            autoComplete="off"
           />
-          <button onClick={handleSearch} disabled={loading}>
+          <button onClick={() => handleSearch()} disabled={loading}>
             {loading ? '...' : '🔍'}
           </button>
+          {suggestions.length > 0 && showSuggestions && (
+            <div className="suggestions-dropdown">
+              {suggestions.map((s, i) => (
+                <div
+                  key={i}
+                  className="suggestion-item"
+                  onClick={() => handleSearch(s)}
+                >
+                  📍 {s}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {weatherData && !weatherData.error && (
           <div className="weather-card">
             <div className="weather-card-header">
               <span className="weather-location">📍 {weatherData.name}</span>
+              <button className="weather-close" onClick={() => { setWeatherData(null); setAiPredictions(null); }}>✕</button>
             </div>
 
             <div className="forecast-tabs">
@@ -409,6 +461,7 @@ function App() {
         {weatherData && weatherData.error && (
           <div className="weather-card" style={{textAlign:'center', color:'#fca5a5'}}>
             {weatherData.error}
+            <button className="weather-close" onClick={() => setWeatherData(null)} style={{marginTop:'8px'}}>✕</button>
           </div>
         )}
       </div>

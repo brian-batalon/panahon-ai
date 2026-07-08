@@ -208,12 +208,12 @@ body {
   transform: translateX(-50%);
   z-index: 1000;
   display: flex;
+  flex-wrap: wrap;
   gap: 0;
   background: rgba(26, 26, 26, 0.85);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
-  overflow: hidden;
   width: 360px;
   max-width: 60vw;
 }
@@ -257,6 +257,37 @@ body {
   cursor: not-allowed;
 }
 
+/* Suggestions Dropdown */
+.suggestions-dropdown {
+  width: 100%;
+  background: rgba(26, 26, 26, 0.98);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  margin-top: 4px;
+  overflow: hidden;
+  z-index: 1001;
+}
+
+.suggestion-item {
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.suggestion-item:hover {
+  background: rgba(74, 103, 65, 0.3);
+}
+
+.suggestion-item:first-child {
+  padding-top: 12px;
+}
+
+.suggestion-item:last-child {
+  padding-bottom: 12px;
+}
+
 /* ========== WEATHER CARD ========== */
 .weather-card {
   position: absolute;
@@ -274,12 +305,31 @@ body {
 }
 
 .weather-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 10px;
 }
 
 .weather-location {
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.weather-close {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.weather-close:hover {
+  background: rgba(255,255,255,0.2);
+  color: #ffffff;
 }
 
 /* Forecast Tabs */
