@@ -208,7 +208,6 @@ body {
   transform: translateX(-50%);
   z-index: 1000;
   display: flex;
-  flex-wrap: wrap;
   gap: 0;
   background: rgba(26, 26, 26, 0.85);
   backdrop-filter: blur(16px);
@@ -259,12 +258,14 @@ body {
 
 /* Suggestions Dropdown */
 .suggestions-dropdown {
-  width: 100%;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
   background: rgba(26, 26, 26, 0.98);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
-  margin-top: 4px;
   overflow: hidden;
   z-index: 1001;
 }
