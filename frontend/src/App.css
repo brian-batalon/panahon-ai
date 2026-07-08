@@ -547,4 +547,14 @@ body {
   .leaflet-control-attribution {
     display: none !important;
   }
+
+  .suggestions-dropdown {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    top: auto;
+    left: 0;
+    right: 0;
+    margin-top: 0;
+    margin-bottom: 4px;
+  }
 }
