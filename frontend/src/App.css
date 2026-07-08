@@ -238,17 +238,19 @@ body {
   font-size: 0.85rem;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
-  background: #4a6741;
+  background: transparent;
   color: #ffffff;
   border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   transition: background 0.2s;
   white-space: nowrap;
   flex-shrink: 0;
+  border-radius: 0;
 }
 
 .search-float button:hover {
-  background: #5a7d4e;
+  background: #4a6741;
 }
 
 .search-float button:disabled {
