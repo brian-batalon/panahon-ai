@@ -92,27 +92,22 @@ function WelcomeModal({ onClose }) {
         <p className="modal-subtitle">
           An intelligent weather monitoring and prediction system powered by Machine Learning and Geographic Information Systems (GIS), designed to serve communities across the Philippines with accurate weather forecasts.
         </p>
-        
         <div className="modal-section">
           <h3>🗺️ On-Demand Monitoring</h3>
           <p>Panahon AI fetches real-time weather data for any municipality you search, using the Open-Meteo API.</p>
         </div>
-        
         <div className="modal-section">
           <h3>🤖 AI-Powered Forecasting</h3>
           <p>Uses XGBoost machine learning models to forecast temperature, humidity, cloud cover, and rain probability 6, 12, and 24 hours ahead.</p>
         </div>
-        
         <div className="modal-section">
           <h3>📊 Data-Driven Insights</h3>
           <p>All readings and predictions are stored for model retraining, climate research, and policy-making.</p>
         </div>
-        
         <div className="modal-section">
           <h3>🇵🇭 Why It Matters</h3>
           <p>The Philippines faces increasing climate-related risks. Panahon AI empowers communities with actionable weather data.</p>
         </div>
-        
         <div className="modal-footer">
           <p>Built by <strong>Engr. Brian Ezekiel D. Batalon, ECE, ECT, SO2</strong></p>
           <button className="modal-start-btn" onClick={onClose}>Get Started</button>
@@ -128,7 +123,6 @@ function Sidebar({ isOpen, onClose }) {
       {isOpen && <div className="sidebar-backdrop" onClick={onClose} />}
       <div className={`sidebar ${isOpen ? 'open' : ''}`}>
         <button className="sidebar-close" onClick={onClose}>✕</button>
-        
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">⛅</div>
           <div>
@@ -136,31 +130,25 @@ function Sidebar({ isOpen, onClose }) {
             <p>Weather Intelligence for the Philippines</p>
           </div>
         </div>
-
         <div className="sidebar-info">
           <p>An intelligent weather monitoring and prediction system powered by Machine Learning and GIS, providing 6, 12, and 24-hour forecasts for any municipality in the Philippines.</p>
         </div>
-
         <div className="sidebar-section">
           <h3>🗺️ On-Demand</h3>
           <p>Fetches real-time data only for locations you search — no wasted resources.</p>
         </div>
-
         <div className="sidebar-section">
           <h3>🤖 XGBoost ML</h3>
           <p>Multi-output AI model: Temp 78.8%, Humidity 67.8%, Clouds 49.7%, Rain predictions.</p>
         </div>
-
         <div className="sidebar-section">
           <h3>📡 Open-Meteo API</h3>
           <p>Free and open weather data with no API keys required.</p>
         </div>
-
         <div className="sidebar-section">
           <h3>🗄️ Supabase</h3>
           <p>All data stored for future model retraining and climate research.</p>
         </div>
-
         <div className="sidebar-section">
           <h3>📊 Model Analysis</h3>
           <p style={{marginBottom:'8px'}}>Download XGBoost performance reports:</p>
@@ -169,7 +157,6 @@ function Sidebar({ isOpen, onClose }) {
             <a href="/panahon_ai_summary.png" download className="dl-btn">Summary</a>
           </div>
         </div>
-
         <div className="sidebar-footer">
           <p>Built by</p>
           <p className="sidebar-name">Engr. Brian Ezekiel D. Batalon</p>
@@ -340,22 +327,24 @@ function App() {
         <button className="sidebar-toggle" onClick={() => setSidebarOpen(true)}>☰</button>
 
         <div className="search-float" ref={searchRef}>
-          <input
-            type="text"
-            placeholder="Search municipality..."
-            value={municipality}
-            onChange={(e) => {
-              setMunicipality(e.target.value)
-              fetchSuggestions(e.target.value)
-              setShowSuggestions(true)
-            }}
-            onKeyDown={handleKeyDown}
-            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            autoComplete="off"
-          />
-          <button onClick={() => handleSearch()} disabled={loading}>
-            {loading ? '...' : '🔍'}
-          </button>
+          <div className="search-inner">
+            <input
+              type="text"
+              placeholder="Search municipality..."
+              value={municipality}
+              onChange={(e) => {
+                setMunicipality(e.target.value)
+                fetchSuggestions(e.target.value)
+                setShowSuggestions(true)
+              }}
+              onKeyDown={handleKeyDown}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              autoComplete="off"
+            />
+            <button onClick={() => handleSearch()} disabled={loading}>
+              {loading ? '...' : '🔍'}
+            </button>
+          </div>
           {suggestions.length > 0 && showSuggestions && (
             <div className="suggestions-dropdown">
               {suggestions.map((s, i) => (
